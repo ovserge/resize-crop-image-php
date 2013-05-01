@@ -169,7 +169,7 @@ class Thumbnail
                 imagegif($img);
     }
     
-    private function _jpeg_save(&$img, $filename = false)
+    private function _jpeg_save($img, $filename = false)
     {
         if ($filename !== false && $this->_fsave_allowed) imagejpeg($img, $filename, $this->_jpeg_quality);
                 imagejpeg($img, '', $this->_jpeg_quality);
