@@ -1,10 +1,12 @@
 <?
+//error_reporting(E_ALL); // for testing
 class Thumbnail
 {
     private $w;
     private $h;
     private $filename;
     private $crop;
+    private $resultfile;
     
     private $_mime_settings;
     private $_fsave_allowed;
@@ -13,13 +15,22 @@ class Thumbnail
     private $_default_height    = 150;
     private $_jpeg_quality      = 90;
     private $_sess_varname      = 'THUMB';
-//ДОБАВЛЕНО
     private $_default_rotate     = 0;
-//ДОБАВЛЕНО
-    
+
     public function __construct()
     {
         session_start();
+        header('Content-type: ' . $info['mime']);
+//    	header('Content-type: text/html'); // for testing
+        $this->resultfile = $_SERVER['DOCUMENT_ROOT'].'/ts/cache/'.md5($_GET['name']).'_'.$_GET['w'].'_'.$_GET['h'];
+
+        if(file_exists($this->resultfile)){
+			$hnd = fopen($this->resultfile, "r");
+			echo fread($hnd, filesize($this->resultfile));
+			fclose($hnd);
+		}
+		exit;
+
         
         $this->w = abs((int)@$_GET['w']);
         $this->h = abs((int)@$_GET['h']);
@@ -63,20 +74,16 @@ class Thumbnail
     private function _run()
     {
 
-
-//ДОБАВЛЕНО
         $new_rotate_tmp = $_GET['rotate'];
         if (!$new_rotate_tmp) {
                 $new_rotate_tmp = $default_rotate;
         }
         $new_rotate = $new_rotate_tmp;
-//ДОБАВЛЕНО
 
         if (!file_exists($this->filename) || !is_file($this->filename)) exit;
         $info = getimagesize($this->filename);
         if (!$info || !isset($this->_mime_settings[$info['mime']])) {
-            // можно возвращать дефолтную картинку
-            // .. и удалять лишние картинки
+            // We can return default img
             //$files = glob("{$name}_*{$ext}");
             //glob("*.txt")
 
@@ -89,18 +96,17 @@ class Thumbnail
         $dst_x = $dst_y = 0;
         
         if (!$this->w) {
-            // вписываем по высоте
+            // make height
             $new_width  = $this->w = floor($orig_width * $this->h / $orig_height);
             $new_height = $this->h;
         }
         elseif (!$this->h) {
-            // вписываем по ширине
+            // make width
             $new_width  = $this->w;
             $new_height = $this->h = floor($orig_height * $this->w / $orig_width);
         }
         elseif ($this->crop) {
-            // вписываем с обрезкой
-
+            // with crop
             $scaleW = $this->w / $orig_width;
             $scaleH = $this->h / $orig_height;
             $scale = max($scaleW, $scaleH);
@@ -110,7 +116,7 @@ class Thumbnail
             $dst_y = floor(($this->h - $new_height) / 2);
         }
         else {
-            // вписываем без обрезки
+            // without crop
             $scaleW = $this->w / $orig_width;
             $scaleH = $this->h / $orig_height;
             $scale = min($scaleW, $scaleH);
@@ -137,27 +143,20 @@ class Thumbnail
             exit;
         }
 
-
-
-
         $orig_img = call_user_func($settings['create'], $this->filename);
-//ДОБАВЛЕНО
         $orig_img = imagerotate($orig_img, $new_rotate, 0);
-//ДОБАВЛЕНО
         $tmp_img  = imagecreatetruecolor($this->w, $this->h);
         // Copy and resize old image into new image
         imagecopyresampled(
             $tmp_img, $orig_img, 
             $dst_x, $dst_y, 
-            0, 0, /*лево_право верх_низ*/ 
+            0, 0, /*left_right top_bottom*/ 
             $new_width, $new_height, 
             $orig_width, $orig_height
         );
-
-
-
+        
         imagedestroy($orig_img);
-        header('Content-type: ' . $info['mime']);
+   
         call_user_func($settings['save'], $tmp_img, $thumbFilename);
         imagedestroy($tmp_img);
         exit;
@@ -165,22 +164,27 @@ class Thumbnail
     
     private function _gif_save($img, $filename = false)
     {
-        if ($filename !== false && $this->_fsave_allowed) imagegif($img, $filename);
-                imagegif($img);
+		imagegif($img, $this->resultfile);
+		$hnd = fopen($this->resultfile, "r");
+		echo fread($hnd, filesize($this->resultfile));
+		fclose($hnd);
     }
     
     private function _jpeg_save($img, $filename = false)
     {
-        if ($filename !== false && $this->_fsave_allowed) imagejpeg($img, $filename, $this->_jpeg_quality);
-                imagejpeg($img, '', $this->_jpeg_quality);
+		imagejpeg($img, $this->resultfile, $this->_jpeg_quality);
+		$hnd = fopen($this->resultfile, "r");
+		echo fread($hnd, filesize($this->resultfile));
+		fclose($hnd);
     }
     
     private function _png_save($img, $filename = false)
-    {
-        if ($filename !== false && $this->_fsave_allowed) imagepng($img, $filename);
-                imagepng($img);
-    }
-    
+    {                
+		imagepng($img, $this->resultfile);
+		$hnd = fopen($this->resultfile, "r");
+		echo fread($hnd, filesize($this->resultfile));			
+		fclose($hnd);
+   }    
 }
 new Thumbnail;
 ?>
