@@ -25,11 +25,12 @@ class Thumbnail
         $this->resultfile = $_SERVER['DOCUMENT_ROOT'].'/ts/cache/'.md5($_GET['name']).'_'.$_GET['w'].'_'.$_GET['h'];
 
         if(file_exists($this->resultfile)){
-			$hnd = fopen($this->resultfile, "r");
-			echo fread($hnd, filesize($this->resultfile));
-			fclose($hnd);
-		}
+		$hnd = fopen($this->resultfile, "r");
+		echo fread($hnd, filesize($this->resultfile));
+		fclose($hnd);
 		exit;
+	}
+	
 
         
         $this->w = abs((int)@$_GET['w']);
